@@ -13,11 +13,17 @@ namespace POS
 {
     public partial class Expenses : MetroFramework.Forms.MetroForm
     {
-        private List<ExpenseList> expenseLists;
-        public Expenses(List<ExpenseList> expenseLists)
+        public int UserId { get; private set; }
+        public int LocationId { get; private set; }
+        public string Token { get; private set; }
+        public int DrawerId { get; private set; }
+        public Expenses(int userId, int locationId, string token, int drawerId)
         {
             InitializeComponent();
-            this.expenseLists = expenseLists;
+            UserId = userId;
+            LocationId = locationId;
+            Token = token;
+            DrawerId = drawerId;
         }
 
         private void Expenses_KeyDown(object sender, KeyEventArgs e)
@@ -28,9 +34,9 @@ namespace POS
             }
         }
 
-        private void btnRemoveAll_Click(object sender, EventArgs e)
+        private async void btnRemoveAll_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtDescription.Text) || string.IsNullOrWhiteSpace(txtAmount.Text))
+            if (string.IsNullOrWhiteSpace(txtDescription.Text) || string.IsNullOrWhiteSpace(txtAmount.Text) || string.IsNullOrWhiteSpace(txtRemarks.Text))
             {
                 MessageBox.Show("Please fill in all required fields.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -42,14 +48,7 @@ namespace POS
                 return;
             }
 
-            var newExpense = new ExpenseList()
-            {
-                Description = txtDescription.Text,
-                Amount = amount,
-                Remarks = txtRemarks.Text
-            };
-
-            expenseLists.Add(newExpense);
+            await DatabaseHelper.AddExpenseAsync(DrawerId, amount, txtRemarks.Text, txtDescription.Text, Token);
             this.DialogResult = DialogResult.OK;
             this.Close();
         }

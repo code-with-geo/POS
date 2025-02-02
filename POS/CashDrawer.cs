@@ -1,4 +1,5 @@
-﻿using POS.Classes;
+﻿using Newtonsoft.Json.Linq;
+using POS.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,10 +17,12 @@ namespace POS
     {
         public int UserId { get; private set; }
         public int LocationId { get; private set; }
-
+        public string Token { get; private set; }
         public List<InitialCashList> InitialCashList = new List<InitialCashList>();
         public List<WithdrawalsList> WithdrawalsList = new List<WithdrawalsList>();
         public List<ExpenseList> ExpenseList = new List<ExpenseList>();
+        public int DrawerId { get; private set; }
+        public bool isStartCashDrawer = false;
 
         DataTable dt = new DataTable();
         public CashDrawer(int userId, int locationId)
@@ -61,75 +64,116 @@ namespace POS
 
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            // Open the InitialCash form and pass the list to it
-            InitialCash initialCashForm = new InitialCash(InitialCashList);
-            initialCashForm.ShowDialog();
+            var initialCash = new InitialCash(UserId, LocationId, Token, DrawerId);
+            var result = initialCash.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                LoadOngoingCashDrawerData();
+            }
         }
 
         private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Withdrawals withdrawals = new Withdrawals(WithdrawalsList);
-            withdrawals.ShowDialog();
+            var withdrawals = new Withdrawals(UserId,LocationId,Token, DrawerId);
+            var result = withdrawals.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                LoadOngoingCashDrawerData();
+            }
         }
 
         private void linkLabel3_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         { 
-            var expenses = new Expenses(ExpenseList);
+            var expenses = new Expenses(UserId, LocationId, Token, DrawerId);
             var result = expenses.ShowDialog();
-
-            // If the user successfully logged in, set the token
-            if (result == DialogResult.OK)
+            if(result == DialogResult.OK)
             {
-                DisplayExpenses();
+                LoadOngoingCashDrawerData();
             }
         }
 
-        private void btnRemoveAll_Click(object sender, EventArgs e)
+        private async void btnRemoveAll_Click(object sender, EventArgs e)
         {
+            if (btnRemoveAll.Text == "Start")
+            {
+                if (decimal.TryParse(txtInitialCash.Text, out decimal amount))
+                {
+                   await DatabaseHelper.StartCashDrawerAsync(UserId, LocationId, amount, Token);
+                   await DatabaseHelper.FetchAndStoreOngoingCashDrawerAsync(UserId, LocationId, Token);
+                   LoadOngoingCashDrawerData();
+                }
+            }else
+            {
+                await DatabaseHelper.EndCashDrawerAsync(DrawerId, Token);
+                this.Close();
 
-            StartCashDrawer();
-
-
+            }
         }
 
         private void DisplayInitialCash()
         {
-            // Calculate the total sum of all initial cash entries
             decimal totalInitialCash = InitialCashList.Sum(entry => entry.Amount);
-
-            // Display the total sum in a label or wherever needed
-            MessageBox.Show(totalInitialCash.ToString("C2"));
         }
 
         private void DisplayWithdrawals()
         {
-            // Calculate the total sum of all initial cash entries
             decimal totalWithdrawals = WithdrawalsList.Sum(entry => entry.Amount);
-
-            // Display the total sum in a label or wherever needed
-          txtWithdrawals.Text  = totalWithdrawals.ToString("C2");
+            txtWithdrawals.Text  = totalWithdrawals.ToString("C2");
         }
 
         private void DisplayExpenses()
         {
-            // Calculate the total sum of all initial cash entries
             decimal totalExpense = ExpenseList.Sum(entry => entry.Amount);
-
-            // Display the total sum in a label or wherever needed
             txtExpense.Text = totalExpense.ToString("C2");
         }
 
-        private void CashDrawer_Load(object sender, EventArgs e)
+        private async void CashDrawer_Load(object sender, EventArgs e)
         {
             dt  = DatabaseHelper.GetEmployeeByUserIdAndLocationId(UserId,LocationId);
             if (dt.Rows.Count > 0)
             {
-                txtLocationId.Text = dt.Rows[0]["LocationId"].ToString();
-                txtCashier.Text = dt.Rows[0]["Name"].ToString();
-                txtTimeStart.Text = DateTime.Now.ToString();
+                if (DatabaseHelper.HasOngoingCashDrawerLocal(UserId, LocationId))
+                {
+                    txtLocationId.Text = dt.Rows[0]["LocationId"].ToString();
+                    txtCashier.Text = dt.Rows[0]["Name"].ToString();
+                    Token = dt.Rows[0]["Token"].ToString();
+                    await DatabaseHelper.FetchAndStoreOngoingCashDrawerAsync(UserId, LocationId, Token);
+                    LoadOngoingCashDrawerData();
+                }
+                else
+                {
+                    btnRemoveAll.Text = "Start";
+                    txtLocationId.Text = dt.Rows[0]["LocationId"].ToString();
+                    txtCashier.Text = dt.Rows[0]["Name"].ToString();
+                    txtTimeStart.Text = DateTime.Now.ToString();
+                    Token = dt.Rows[0]["Token"].ToString();
+                    txtWithdrawals.Text = 0m.ToString("C2");
+                    txtExpense.Text = 0m.ToString("C2");
+                    txtTotalSale.Text = 0m.ToString("C2");
+                    txtCashDrawer.Text = 0m.ToString("C2");
+                }
             }
-            DisplayWithdrawals();
-            DisplayExpenses();
+        }
+
+        private void LoadOngoingCashDrawerData()
+        {
+            DataTable dt = DatabaseHelper.GetOngoingCashDrawer();
+
+            if (dt.Rows.Count > 0)
+            {
+               btnRemoveAll.Text = "End";
+                DrawerId = Convert.ToInt32(dt.Rows[0]["DrawerId"].ToString());
+                txtTimeStart.Text = Convert.ToDateTime(dt.Rows[0]["TimeStart"]).ToString("g"); // Formats DateTime
+                txtWithdrawals.Text = Convert.ToDecimal(dt.Rows[0]["Withdrawals"]).ToString("C2");
+                txtExpense.Text = Convert.ToDecimal(dt.Rows[0]["Expenses"]).ToString("C2");
+                txtTotalSale.Text = Convert.ToDecimal(dt.Rows[0]["TotalSales"]).ToString("C2");
+                txtCashDrawer.Text = Convert.ToDecimal(dt.Rows[0]["DrawerCash"]).ToString("C2");
+                txtInitialCash.Text = Convert.ToDecimal(dt.Rows[0]["InitialCash"]).ToString("C2");
+            }
+            else
+            {
+                MessageBox.Show("No ongoing cash drawer found.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
     }
 }

@@ -28,57 +28,60 @@
         /// </summary>
         private void InitializeComponent()
         {
-            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges1 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
-            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges2 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
-            btnRemoveAll = new Button();
-            txtEmail = new Guna.UI2.WinForms.Guna2TextBox();
+            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges3 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
+            Guna.UI2.WinForms.Suite.CustomizableEdges customizableEdges4 = new Guna.UI2.WinForms.Suite.CustomizableEdges();
+            btnContinue = new Button();
+            txtAmountReceived = new Guna.UI2.WinForms.Guna2TextBox();
             guna2HtmlLabel1 = new Guna.UI2.WinForms.Guna2HtmlLabel();
             guna2HtmlLabel10 = new Guna.UI2.WinForms.Guna2HtmlLabel();
             lblTotalAmount = new Guna.UI2.WinForms.Guna2HtmlLabel();
             guna2HtmlLabel2 = new Guna.UI2.WinForms.Guna2HtmlLabel();
-            guna2HtmlLabel3 = new Guna.UI2.WinForms.Guna2HtmlLabel();
+            lblChange = new Guna.UI2.WinForms.Guna2HtmlLabel();
+            printDocument = new System.Drawing.Printing.PrintDocument();
             SuspendLayout();
             // 
-            // btnRemoveAll
+            // btnContinue
             // 
-            btnRemoveAll.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnRemoveAll.BackColor = Color.FromArgb(255, 214, 90);
-            btnRemoveAll.Cursor = Cursors.Hand;
-            btnRemoveAll.FlatAppearance.BorderSize = 0;
-            btnRemoveAll.FlatStyle = FlatStyle.Flat;
-            btnRemoveAll.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            btnRemoveAll.ForeColor = Color.Black;
-            btnRemoveAll.Location = new Point(263, 273);
-            btnRemoveAll.Name = "btnRemoveAll";
-            btnRemoveAll.Size = new Size(144, 51);
-            btnRemoveAll.TabIndex = 50;
-            btnRemoveAll.Text = "Continue";
-            btnRemoveAll.TextImageRelation = TextImageRelation.ImageBeforeText;
-            btnRemoveAll.UseVisualStyleBackColor = false;
+            btnContinue.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnContinue.BackColor = Color.FromArgb(255, 214, 90);
+            btnContinue.Cursor = Cursors.Hand;
+            btnContinue.FlatAppearance.BorderSize = 0;
+            btnContinue.FlatStyle = FlatStyle.Flat;
+            btnContinue.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            btnContinue.ForeColor = Color.Black;
+            btnContinue.Location = new Point(263, 273);
+            btnContinue.Name = "btnContinue";
+            btnContinue.Size = new Size(144, 51);
+            btnContinue.TabIndex = 50;
+            btnContinue.Text = "Continue";
+            btnContinue.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnContinue.UseVisualStyleBackColor = false;
+            btnContinue.Click += btnContinue_Click;
             // 
-            // txtEmail
+            // txtAmountReceived
             // 
-            txtEmail.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtEmail.BackColor = Color.White;
-            txtEmail.BorderRadius = 5;
-            txtEmail.CustomizableEdges = customizableEdges1;
-            txtEmail.DefaultText = "";
-            txtEmail.DisabledState.BorderColor = Color.FromArgb(208, 208, 208);
-            txtEmail.DisabledState.FillColor = Color.FromArgb(226, 226, 226);
-            txtEmail.DisabledState.ForeColor = Color.FromArgb(138, 138, 138);
-            txtEmail.DisabledState.PlaceholderForeColor = Color.FromArgb(138, 138, 138);
-            txtEmail.FocusedState.BorderColor = Color.FromArgb(94, 148, 255);
-            txtEmail.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            txtEmail.HoverState.BorderColor = Color.FromArgb(94, 148, 255);
-            txtEmail.Location = new Point(62, 158);
-            txtEmail.Name = "txtEmail";
-            txtEmail.PasswordChar = '\0';
-            txtEmail.PlaceholderText = "Amount Receive";
-            txtEmail.SelectedText = "";
-            txtEmail.ShadowDecoration.CustomizableEdges = customizableEdges2;
-            txtEmail.Size = new Size(324, 36);
-            txtEmail.TabIndex = 49;
-            txtEmail.TextAlign = HorizontalAlignment.Center;
+            txtAmountReceived.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtAmountReceived.BackColor = Color.White;
+            txtAmountReceived.BorderRadius = 5;
+            txtAmountReceived.CustomizableEdges = customizableEdges3;
+            txtAmountReceived.DefaultText = "";
+            txtAmountReceived.DisabledState.BorderColor = Color.FromArgb(208, 208, 208);
+            txtAmountReceived.DisabledState.FillColor = Color.FromArgb(226, 226, 226);
+            txtAmountReceived.DisabledState.ForeColor = Color.FromArgb(138, 138, 138);
+            txtAmountReceived.DisabledState.PlaceholderForeColor = Color.FromArgb(138, 138, 138);
+            txtAmountReceived.FocusedState.BorderColor = Color.FromArgb(94, 148, 255);
+            txtAmountReceived.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            txtAmountReceived.HoverState.BorderColor = Color.FromArgb(94, 148, 255);
+            txtAmountReceived.Location = new Point(62, 158);
+            txtAmountReceived.Name = "txtAmountReceived";
+            txtAmountReceived.PasswordChar = '\0';
+            txtAmountReceived.PlaceholderText = "Amount Receive";
+            txtAmountReceived.SelectedText = "";
+            txtAmountReceived.ShadowDecoration.CustomizableEdges = customizableEdges4;
+            txtAmountReceived.Size = new Size(324, 36);
+            txtAmountReceived.TabIndex = 49;
+            txtAmountReceived.TextAlign = HorizontalAlignment.Center;
+            txtAmountReceived.TextChanged += txtAmountReceived_TextChanged;
             // 
             // guna2HtmlLabel1
             // 
@@ -109,7 +112,7 @@
             lblTotalAmount.BackColor = Color.Transparent;
             lblTotalAmount.Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold, GraphicsUnit.Point);
             lblTotalAmount.ForeColor = Color.DarkGreen;
-            lblTotalAmount.Location = new Point(338, 118);
+            lblTotalAmount.Location = new Point(305, 114);
             lblTotalAmount.Name = "lblTotalAmount";
             lblTotalAmount.Size = new Size(48, 34);
             lblTotalAmount.TabIndex = 52;
@@ -128,18 +131,18 @@
             guna2HtmlLabel2.TabIndex = 55;
             guna2HtmlLabel2.Text = "Change Amount";
             // 
-            // guna2HtmlLabel3
+            // lblChange
             // 
-            guna2HtmlLabel3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-            guna2HtmlLabel3.BackColor = Color.Transparent;
-            guna2HtmlLabel3.Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold, GraphicsUnit.Point);
-            guna2HtmlLabel3.ForeColor = Color.DarkGreen;
-            guna2HtmlLabel3.Location = new Point(338, 201);
-            guna2HtmlLabel3.Name = "guna2HtmlLabel3";
-            guna2HtmlLabel3.Size = new Size(48, 34);
-            guna2HtmlLabel3.TabIndex = 54;
-            guna2HtmlLabel3.Text = "0.00";
-            guna2HtmlLabel3.TextAlignment = ContentAlignment.MiddleRight;
+            lblChange.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            lblChange.BackColor = Color.Transparent;
+            lblChange.Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold, GraphicsUnit.Point);
+            lblChange.ForeColor = Color.DarkGreen;
+            lblChange.Location = new Point(305, 200);
+            lblChange.Name = "lblChange";
+            lblChange.Size = new Size(48, 34);
+            lblChange.TabIndex = 54;
+            lblChange.Text = "0.00";
+            lblChange.TextAlignment = ContentAlignment.MiddleRight;
             // 
             // Cash
             // 
@@ -148,11 +151,11 @@
             ClientSize = new Size(445, 385);
             ControlBox = false;
             Controls.Add(guna2HtmlLabel2);
-            Controls.Add(guna2HtmlLabel3);
+            Controls.Add(lblChange);
             Controls.Add(guna2HtmlLabel10);
             Controls.Add(lblTotalAmount);
-            Controls.Add(btnRemoveAll);
-            Controls.Add(txtEmail);
+            Controls.Add(btnContinue);
+            Controls.Add(txtAmountReceived);
             Controls.Add(guna2HtmlLabel1);
             KeyPreview = true;
             MaximizeBox = false;
@@ -162,18 +165,20 @@
             Resizable = false;
             SizeGripStyle = SizeGripStyle.Hide;
             Style = MetroFramework.MetroColorStyle.Yellow;
+            Load += Cash_Load;
             KeyDown += Cash_KeyDown;
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
-        private Button btnRemoveAll;
-        private Guna.UI2.WinForms.Guna2TextBox txtEmail;
+        private Button btnContinue;
+        private Guna.UI2.WinForms.Guna2TextBox txtAmountReceived;
         private Guna.UI2.WinForms.Guna2HtmlLabel guna2HtmlLabel1;
         private Guna.UI2.WinForms.Guna2HtmlLabel guna2HtmlLabel10;
         private Guna.UI2.WinForms.Guna2HtmlLabel lblTotalAmount;
         private Guna.UI2.WinForms.Guna2HtmlLabel guna2HtmlLabel2;
-        private Guna.UI2.WinForms.Guna2HtmlLabel guna2HtmlLabel3;
+        private Guna.UI2.WinForms.Guna2HtmlLabel lblChange;
+        private System.Drawing.Printing.PrintDocument printDocument;
     }
 }

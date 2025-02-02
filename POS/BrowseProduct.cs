@@ -115,7 +115,7 @@ namespace POS
             DataGridViewImageColumn removeButtonColumn = new DataGridViewImageColumn();
             removeButtonColumn.Name = "Select";
             removeButtonColumn.HeaderText = "Select";
-            removeButtonColumn.Image = Properties.Resources.trash; // Replace with your image resource
+            removeButtonColumn.Image = Properties.Resources.attach_1; // Replace with your image resource
             removeButtonColumn.ImageLayout = DataGridViewImageCellLayout.Zoom; // Adjust layout if needed
             dgvProducts.Columns.Add(removeButtonColumn);
 

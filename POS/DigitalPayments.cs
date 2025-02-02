@@ -5,16 +5,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace POS
 {
-    public partial class Cash : MetroFramework.Forms.MetroForm
+    public partial class DigitalPayments : MetroFramework.Forms.MetroForm
     {
         public int UserId { get; private set; }
         public int LocationId { get; private set; }
@@ -29,23 +27,18 @@ namespace POS
         public decimal TotalVatExempt { get; set; }
         public decimal AmountChange { get; set; }
         public decimal AmountReceived { get; set; }
-        public Cash(int userId, int locationId, int customerId, List<Cart> cart)
+        public int PaymentType { get; set; }
+        public DigitalPayments(int userId, int locationId, int customerId, List<Cart> cart, int paymentType)
         {
             InitializeComponent();
             UserId = userId;
             LocationId = locationId;
             CustomerId = customerId;
             Cart = cart;
+            PaymentType = paymentType;
         }
 
-        private void DisplayTotalAmount()
-        {
-            // Check if the cart has items
-            decimal totalSubTotal = Cart.Any() ? Cart.Sum(p => p.SubTotal) : 0;
-            lblTotalAmount.Text = totalSubTotal.ToString("C2");
-        }
-
-        private void Cash_KeyDown(object sender, KeyEventArgs e)
+        private void EWallet_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Escape)
             {
@@ -53,29 +46,10 @@ namespace POS
             }
         }
 
-        private void txtAmountReceived_TextChanged(object sender, EventArgs e)
-        {
-            // Parse the entered amount from the text box (if it's a valid number)
-            if (decimal.TryParse(txtAmountReceived.Text, out decimal amountReceived))
-            {
-                decimal totalAmount = Cart.Any() ? Cart.Sum(p => p.SubTotal) : 0;
-                decimal change = amountReceived - totalAmount;
-                AmountReceived = amountReceived;
-                AmountChange = change;
-                // Display the change (ensure it's non-negative, or show a message)
-                lblChange.Text = change >= 0 ? change.ToString("C2") : "Insufficient Amount";
-            }
-            else
-            {
-                // If the input is not a valid number, reset the change display
-                lblChange.Text = "Invalid Amount";
-            }
-        }
-
         private async Task<bool> AddOrderAsync(int locationId, int userId, int customerId, int transactionType, int paymentType,
-                                       decimal totalVatSale, decimal totalVatAmount, decimal totalVatExempt,
-                                       string accountName, string accountNumber, string referenceNo,
-                                       decimal digitalPaymentAmount)
+                                      decimal totalVatSale, decimal totalVatAmount, decimal totalVatExempt,
+                                      string accountName, string accountNumber, string referenceNo,
+                                      decimal digitalPaymentAmount)
         {
             try
             {
@@ -161,6 +135,10 @@ namespace POS
 
         private async void btnContinue_Click(object sender, EventArgs e)
         {
+            if (decimal.TryParse(txtAmount.Text, out decimal amountReceived))
+            {
+
+           
             decimal vatSale = Cart.Any(p => p.IsVat == 1) ? Cart.Where(p => p.IsVat == 1).Sum(p => p.SubTotal) : 0;
             decimal vatAmount = Cart.Any() ? Cart.Sum(p => p.VatAmount) : 0;
             decimal vatExempt = Cart.Any(p => p.IsVat == 0) ? Cart.Where(p => p.IsVat == 0).Sum(p => p.SubTotal) : 0;
@@ -170,14 +148,14 @@ namespace POS
             userId: UserId,
             customerId: CustomerId,
             transactionType: 1,
-            paymentType: 0,
+            paymentType: PaymentType,
             totalVatSale: vatSale,
             totalVatAmount: vatAmount,
             totalVatExempt: vatExempt,
-            accountName: "",
-            accountNumber: "",
-            referenceNo: "",
-            digitalPaymentAmount: 0m
+            accountName: txtAccountName.Text,
+            accountNumber: txtAccountNumber.Text,
+            referenceNo: txtReferenceNo.Text,
+            digitalPaymentAmount: amountReceived
              );
 
             if (result)
@@ -191,11 +169,8 @@ namespace POS
                     this.DialogResult = DialogResult.OK;
                     this.Close();
                 }
+                }
             }
-        }
-        private void Cash_Load(object sender, EventArgs e)
-        {
-            DisplayTotalAmount();
         }
     }
 }

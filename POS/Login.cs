@@ -58,43 +58,59 @@ namespace POS
 
             if (File.Exists(DbPath))
             {
-                if (AuthenticateUserLocally(username,password))
-                {
-                    var (userId, token, locationId) = GetUserAndToken(username, password);
-                    UserId = Convert.ToInt32(userId);
-                    LocationId = Convert.ToInt32(locationId);
-                    if (!string.IsNullOrEmpty(token) && token != "" && IsTokenExpired(token))
-                    {
-
-                        string users = $"https://localhost:7148/api/auth/locations/{locationId}";
-                        string products = "https://localhost:7148/api/products";
-                        string category = "https://localhost:7148/api/category";
-                        string inventory = $"https://localhost:7148/api/inventory/pos?locationId={locationId}";
-                        string discount = "https://localhost:7148/api/discounts";
-                            await DatabaseHelper.SyncUser(users, Token);
-                            await DatabaseHelper.SyncProducts(products, Token);
-                            await DatabaseHelper.SyncCategory(category, Token);
-                            await DatabaseHelper.SyncInventory(inventory, Token);
-                            await DatabaseHelper.SyncDiscount(discount, Token);
-                            OpenMainForm();
-                    }
-                    else
-                    {
-                        var response = await AuthenticateUserViaAPI(username, password);
-                        if (!string.IsNullOrEmpty(response.Token))
-                        {
-                            UserId = Convert.ToInt32(response.UserId);
-                            UpdateToken(Convert.ToInt32(response.UserId), response.Token);
-                            OpenMainForm();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Invalid username and password.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
-                    }
-                }
-                else
-                {
+                //if (AuthenticateUserLocally(username,password))
+                //{
+                //    var (userId, token, locationId) = GetUserAndToken(username, password);
+                //    UserId = Convert.ToInt32(userId);
+                //    LocationId = Convert.ToInt32(locationId);
+                //    if (!string.IsNullOrEmpty(token) && token != "")
+                //    {
+                //        if (IsTokenExpired(token))
+                //        {
+                //            string users = $"https://localhost:7148/api/auth/locations/{locationId}";
+                //            string products = "https://localhost:7148/api/products";
+                //            string category = "https://localhost:7148/api/category";
+                //            string inventory = $"https://localhost:7148/api/inventory/pos?locationId={locationId}";
+                //            string discount = "https://localhost:7148/api/discounts";
+                //            await DatabaseHelper.SyncUser(users, Token);
+                //            await DatabaseHelper.SyncProducts(products, Token);
+                //            await DatabaseHelper.SyncCategory(category, Token);
+                //            await DatabaseHelper.SyncInventory(inventory, Token);
+                //            await DatabaseHelper.SyncDiscount(discount, Token);
+                //            OpenMainForm();
+                //        }
+                //        else
+                //        {
+                //            var response = await AuthenticateUserViaAPI(username, password);
+                //            if (!string.IsNullOrEmpty(response.Token))
+                //            {
+                //                UserId = Convert.ToInt32(response.UserId);
+                //                UpdateToken(Convert.ToInt32(response.UserId), response.Token);
+                //                OpenMainForm();
+                //            }
+                //            else
+                //            {
+                //                MessageBox.Show("Invalid username and password.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //            }
+                //        }
+                //    }
+                //    else
+                //    {
+                //        var response = await AuthenticateUserViaAPI(username, password);
+                //        if (!string.IsNullOrEmpty(response.Token))
+                //        {
+                //            UserId = Convert.ToInt32(response.UserId);
+                //            UpdateToken(Convert.ToInt32(response.UserId), response.Token);
+                //            OpenMainForm();
+                //        }
+                //        else
+                //        {
+                //            MessageBox.Show("Invalid username and password.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                //        }
+                //    }
+                //}
+                //else
+                //{
                     var response = await AuthenticateUserViaAPI(username, password);
 
                     if (!string.IsNullOrEmpty(response.Token))
@@ -107,7 +123,7 @@ namespace POS
                     {
                         MessageBox.Show("Invalid username and password.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
-                }
+                //}
             }
             else if (!IsInternetAvailable())
             {
@@ -154,20 +170,20 @@ namespace POS
                     // Convert the expiration time from Unix time to DateTime
                     var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expTimestamp).UtcDateTime;
 
-                    // Compare with the current UTC time
+                    // Compare with the current UTC time and return true if expired
                     return DateTime.UtcNow >= expirationTime;
                 }
 
-                // If no exp claim is found or parsing fails, assume the token is invalid
+                // If no exp claim is found or parsing fails, assume the token is invalid or expired
                 return true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error decoding token: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return true; // Treat as expired in case of error
+                // For production, consider logging the exception rather than showing a message box
+                Console.WriteLine($"Error decoding token: {ex.Message}");
+                return true; // Treat as expired or invalid in case of error
             }
         }
-
         public static void UpdateToken(int userId, string token)
         {
             using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))

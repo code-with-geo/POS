@@ -40,10 +40,6 @@
             cbKeys = new Guna.UI2.WinForms.Guna2ComboBox();
             txtSearch = new Guna.UI2.WinForms.Guna2TextBox();
             dgvCustomer = new Guna.UI2.WinForms.Guna2DataGridView();
-            Barcode = new DataGridViewTextBoxColumn();
-            ProductName = new DataGridViewTextBoxColumn();
-            Price = new DataGridViewTextBoxColumn();
-            Quantity = new DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)dgvCustomer).BeginInit();
             SuspendLayout();
             // 
@@ -88,13 +84,14 @@
             cbKeys.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
             cbKeys.ForeColor = Color.FromArgb(105, 117, 101);
             cbKeys.ItemHeight = 30;
-            cbKeys.Items.AddRange(new object[] { "FIRST NAME", "LAST NAME", "EMAIL" });
+            cbKeys.Items.AddRange(new object[] { "Account Id", "First Name", "Last Name", "Email" });
             cbKeys.Location = new Point(27, 54);
             cbKeys.Name = "cbKeys";
             cbKeys.ShadowDecoration.CustomizableEdges = customizableEdges2;
             cbKeys.Size = new Size(152, 36);
             cbKeys.StartIndex = 0;
             cbKeys.TabIndex = 29;
+            cbKeys.SelectedIndexChanged += cbKeys_SelectedIndexChanged;
             // 
             // txtSearch
             // 
@@ -118,6 +115,7 @@
             txtSearch.ShadowDecoration.CustomizableEdges = customizableEdges4;
             txtSearch.Size = new Size(731, 36);
             txtSearch.TabIndex = 28;
+            txtSearch.TextChanged += txtSearch_TextChanged;
             // 
             // dgvCustomer
             // 
@@ -126,6 +124,7 @@
             dgvCustomer.AllowUserToResizeColumns = false;
             dgvCustomer.AllowUserToResizeRows = false;
             dataGridViewCellStyle1.BackColor = Color.White;
+            dataGridViewCellStyle1.ForeColor = Color.Black;
             dgvCustomer.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             dgvCustomer.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
@@ -133,17 +132,16 @@
             dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             dataGridViewCellStyle2.ForeColor = Color.Black;
             dataGridViewCellStyle2.Padding = new Padding(5);
-            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(246, 177, 0);
-            dataGridViewCellStyle2.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle2.SelectionBackColor = Color.White;
+            dataGridViewCellStyle2.SelectionForeColor = Color.Black;
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
             dgvCustomer.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dgvCustomer.ColumnHeadersHeight = 40;
-            dgvCustomer.Columns.AddRange(new DataGridViewColumn[] { Barcode, ProductName, Price, Quantity });
             dgvCustomer.Cursor = Cursors.Hand;
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
             dataGridViewCellStyle3.BackColor = Color.White;
             dataGridViewCellStyle3.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            dataGridViewCellStyle3.ForeColor = Color.White;
+            dataGridViewCellStyle3.ForeColor = Color.Black;
             dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(231, 229, 255);
             dataGridViewCellStyle3.SelectionForeColor = Color.FromArgb(246, 177, 0);
             dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
@@ -172,37 +170,12 @@
             dgvCustomer.ThemeStyle.RowsStyle.BackColor = Color.White;
             dgvCustomer.ThemeStyle.RowsStyle.BorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
             dgvCustomer.ThemeStyle.RowsStyle.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
-            dgvCustomer.ThemeStyle.RowsStyle.ForeColor = Color.White;
+            dgvCustomer.ThemeStyle.RowsStyle.ForeColor = Color.Black;
             dgvCustomer.ThemeStyle.RowsStyle.Height = 25;
             dgvCustomer.ThemeStyle.RowsStyle.SelectionBackColor = Color.FromArgb(231, 229, 255);
             dgvCustomer.ThemeStyle.RowsStyle.SelectionForeColor = Color.FromArgb(246, 177, 0);
-            // 
-            // Barcode
-            // 
-            Barcode.HeaderText = "Barcode";
-            Barcode.Name = "Barcode";
-            Barcode.ReadOnly = true;
-            Barcode.Resizable = DataGridViewTriState.False;
-            // 
-            // ProductName
-            // 
-            ProductName.HeaderText = "Product Name";
-            ProductName.Name = "ProductName";
-            ProductName.ReadOnly = true;
-            ProductName.Resizable = DataGridViewTriState.False;
-            // 
-            // Price
-            // 
-            Price.HeaderText = "Price";
-            Price.Name = "Price";
-            Price.ReadOnly = true;
-            Price.Resizable = DataGridViewTriState.False;
-            // 
-            // Quantity
-            // 
-            Quantity.HeaderText = "Quantity";
-            Quantity.Name = "Quantity";
-            Quantity.Resizable = DataGridViewTriState.False;
+            dgvCustomer.CellClick += dgvCustomer_CellClick;
+            dgvCustomer.KeyDown += dgvCustomer_KeyDown;
             // 
             // Customer
             // 
@@ -222,6 +195,7 @@
             Name = "Customer";
             SizeGripStyle = SizeGripStyle.Hide;
             Style = MetroFramework.MetroColorStyle.Yellow;
+            Load += Customer_Load;
             KeyDown += Customer_KeyDown;
             ((System.ComponentModel.ISupportInitialize)dgvCustomer).EndInit();
             ResumeLayout(false);
@@ -235,9 +209,5 @@
         private Guna.UI2.WinForms.Guna2ComboBox cbKeys;
         private Guna.UI2.WinForms.Guna2TextBox txtSearch;
         private Guna.UI2.WinForms.Guna2DataGridView dgvCustomer;
-        private DataGridViewTextBoxColumn Barcode;
-        private DataGridViewTextBoxColumn ProductName;
-        private DataGridViewTextBoxColumn Price;
-        private DataGridViewTextBoxColumn Quantity;
     }
 }

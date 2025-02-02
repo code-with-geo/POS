@@ -100,7 +100,7 @@
             lblTopTotalAmount.BackColor = Color.Transparent;
             lblTopTotalAmount.Font = new Font("Segoe UI", 24F, FontStyle.Bold, GraphicsUnit.Point);
             lblTopTotalAmount.ForeColor = Color.DarkGreen;
-            lblTopTotalAmount.Location = new Point(1004, 17);
+            lblTopTotalAmount.Location = new Point(943, 17);
             lblTopTotalAmount.Name = "lblTopTotalAmount";
             lblTopTotalAmount.Size = new Size(66, 47);
             lblTopTotalAmount.TabIndex = 23;
@@ -315,7 +315,7 @@
             lblDiscount.BackColor = Color.Transparent;
             lblDiscount.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point);
             lblDiscount.ForeColor = Color.Black;
-            lblDiscount.Location = new Point(270, 37);
+            lblDiscount.Location = new Point(156, 40);
             lblDiscount.Name = "lblDiscount";
             lblDiscount.Size = new Size(27, 19);
             lblDiscount.TabIndex = 20;
@@ -364,7 +364,7 @@
             lblVatSale.BackColor = Color.Transparent;
             lblVatSale.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point);
             lblVatSale.ForeColor = Color.Black;
-            lblVatSale.Location = new Point(270, 62);
+            lblVatSale.Location = new Point(156, 65);
             lblVatSale.Name = "lblVatSale";
             lblVatSale.Size = new Size(27, 19);
             lblVatSale.TabIndex = 16;
@@ -401,7 +401,7 @@
             lblVatAmount.BackColor = Color.Transparent;
             lblVatAmount.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point);
             lblVatAmount.ForeColor = Color.Black;
-            lblVatAmount.Location = new Point(270, 87);
+            lblVatAmount.Location = new Point(156, 90);
             lblVatAmount.Name = "lblVatAmount";
             lblVatAmount.Size = new Size(27, 19);
             lblVatAmount.TabIndex = 15;
@@ -414,7 +414,7 @@
             lblTotalAmount.BackColor = Color.Transparent;
             lblTotalAmount.Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold, GraphicsUnit.Point);
             lblTotalAmount.ForeColor = Color.DarkGreen;
-            lblTotalAmount.Location = new Point(249, 130);
+            lblTotalAmount.Location = new Point(156, 133);
             lblTotalAmount.Name = "lblTotalAmount";
             lblTotalAmount.Size = new Size(48, 34);
             lblTotalAmount.TabIndex = 22;
@@ -427,7 +427,7 @@
             lblVatExempt.BackColor = Color.Transparent;
             lblVatExempt.Font = new Font("Segoe UI Semibold", 9.75F, FontStyle.Bold, GraphicsUnit.Point);
             lblVatExempt.ForeColor = Color.Black;
-            lblVatExempt.Location = new Point(270, 112);
+            lblVatExempt.Location = new Point(156, 115);
             lblVatExempt.Name = "lblVatExempt";
             lblVatExempt.Size = new Size(27, 19);
             lblVatExempt.TabIndex = 14;

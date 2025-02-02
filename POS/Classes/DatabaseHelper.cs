@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualBasic.ApplicationServices;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,6 +7,7 @@ using System.Data.SQLite;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -153,6 +155,7 @@ namespace POS.Classes
                             UserId INTEGER NOT NULL,
                             LocationId INTEGER NOT NULL,
                             InitialCash DECIMAL(18, 2) NOT NULL,
+                            TotalSales DECIMAL(18, 2) NOT NULL,
                             Withdrawals DECIMAL(18, 2) NOT NULL,
                             Expenses DECIMAL(18, 2) NOT NULL,
                             DrawerCash DECIMAL(18, 2) NOT NULL,    
@@ -168,9 +171,9 @@ namespace POS.Classes
                         CREATE TABLE IF NOT EXISTS InitialCash (
                             Id INTEGER PRIMARY KEY AUTOINCREMENT,
                             DrawerId INTEGER NOT NULL,
-                            Cash DECIMAL(18, 2) NOT NULL,
+                            Description VARCHAR(100) NOT NULL,
+                            Amount DECIMAL(18, 2) NOT NULL,
                             Remarks VARCHAR(100) NOT NULL,
-                            IsAdditional  INTEGER NOT NULL,
                             DateCreated DATETIME DEFAULT (DATETIME('now'))     
                         );",
 
@@ -179,7 +182,8 @@ namespace POS.Classes
                         CREATE TABLE IF NOT EXISTS Withdrawals (
                             Id INTEGER PRIMARY KEY AUTOINCREMENT,
                             DrawerId INTEGER NOT NULL,
-                            Cash DECIMAL(18, 2) NOT NULL,
+                            Description VARCHAR(100) NOT NULL,
+                            Amount DECIMAL(18, 2) NOT NULL,
                             Remarks VARCHAR(100) NOT NULL,
                             DateCreated DATETIME DEFAULT (DATETIME('now'))     
                         );",
@@ -189,7 +193,8 @@ namespace POS.Classes
                         CREATE TABLE IF NOT EXISTS Expenses (
                             Id INTEGER PRIMARY KEY AUTOINCREMENT,
                             DrawerId INTEGER NOT NULL,
-                            Cash DECIMAL(18, 2) NOT NULL,
+                            Description VARCHAR(100) NOT NULL,
+                            Amount DECIMAL(18, 2) NOT NULL,
                             Remarks VARCHAR(100) NOT NULL,
                             DateCreated DATETIME DEFAULT (DATETIME('now'))     
                         );",
@@ -1334,7 +1339,7 @@ namespace POS.Classes
                     connection.Open();
 
                     string query = @"
-                        SELECT UserId, LocationId, Name, IsRole, Status 
+                        SELECT UserId, LocationId, Name, IsRole, Status, Token 
                         FROM Users WHERE UserId = @UserId AND LocationId = @LocationId";
 
                     using (var command = new SQLiteCommand(query, connection))
@@ -1427,6 +1432,710 @@ namespace POS.Classes
             {
                 MessageBox.Show($"Error inserting cash drawer entry: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+
+        public static async Task StartCashDrawerAsync(int userId, int locationId, decimal initialCash, string token)
+        {
+            try
+            {
+                string apiUrl = "https://localhost:7148/api/cashdrawer/start"; // Replace with your actual API URL
+
+                var requestData = new
+                {
+                    UserId = userId,
+                    LocationId = locationId,
+                    InitialCash = initialCash
+                };
+
+                using (HttpClient client = new HttpClient())
+                {
+                    var jsonContent = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    // Set authorization header with Bearer token
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show("Cash drawer started successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public static async Task FetchAndStoreOngoingCashDrawerAsync(int userId, int locationId, string token)
+        {
+            try
+            {
+                string apiUrl = $"https://localhost:7148/api/cashdrawer/ongoing/{userId}/{locationId}"; // Replace with actual API URL
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    var cashDrawer = JsonSerializer.Deserialize<CashDrawer>(responseBody);
+
+                    if (cashDrawer == null)
+                    {
+                        MessageBox.Show("No ongoing cash drawer found.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+
+                    UpsertCashDrawerIntoLocalDatabase(cashDrawer, DbPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void UpsertCashDrawerIntoLocalDatabase(CashDrawer cashDrawer, string dbPath)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={dbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    // Check if the drawer already exists in the database
+                    string checkQuery = "SELECT COUNT(*) FROM CashDrawer WHERE DrawerId = @DrawerId AND TimeEnd IS NULL";
+                    using (var checkCommand = new SQLiteCommand(checkQuery, connection))
+                    {
+                        checkCommand.Parameters.AddWithValue("@DrawerId", cashDrawer.DrawerId);
+                        var count = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+                        if (count > 0)
+                        {
+                            // If the drawer exists, update it
+                            string updateQuery = @"
+                    UPDATE CashDrawer
+                    SET 
+                        UserId = @UserId,
+                        LocationId = @LocationId,
+                        InitialCash = @InitialCash,
+                        TotalSales = @TotalSales,
+                        Withdrawals = @Withdrawals,
+                        Expenses = @Expenses,
+                        DrawerCash = @DrawerCash,
+                        TimeStart = @TimeStart,
+                        TimeEnd = @TimeEnd,
+                        Status = @Status
+                    WHERE DrawerId = @DrawerId AND TimeEnd IS NULL";
+
+                            using (var updateCommand = new SQLiteCommand(updateQuery, connection))
+                            {
+                                updateCommand.Parameters.AddWithValue("@DrawerId", cashDrawer.DrawerId);
+                                updateCommand.Parameters.AddWithValue("@UserId", cashDrawer.UserId);
+                                updateCommand.Parameters.AddWithValue("@LocationId", cashDrawer.LocationId);
+                                updateCommand.Parameters.AddWithValue("@InitialCash", cashDrawer.InitialCash);
+                                updateCommand.Parameters.AddWithValue("@TotalSales", cashDrawer.TotalSales);
+                                updateCommand.Parameters.AddWithValue("@Withdrawals", cashDrawer.Withdrawals);
+                                updateCommand.Parameters.AddWithValue("@Expenses", cashDrawer.Expense);
+                                updateCommand.Parameters.AddWithValue("@DrawerCash", cashDrawer.DrawerCash);
+                                updateCommand.Parameters.AddWithValue("@TimeStart", cashDrawer.TimeStart);
+                                updateCommand.Parameters.AddWithValue("@TimeEnd", (object)cashDrawer.TimeEnd ?? DBNull.Value);
+                                updateCommand.Parameters.AddWithValue("@Status", cashDrawer.Status);
+
+                                updateCommand.ExecuteNonQuery();
+                            }
+                        }
+                        else
+                        {
+                            // If the drawer does not exist, insert a new record
+                            string insertQuery = @"
+                    INSERT INTO CashDrawer (DrawerId, UserId, LocationId, InitialCash, TotalSales, Withdrawals, Expenses, DrawerCash, TimeStart, TimeEnd, Status)
+                    VALUES (@DrawerId, @UserId, @LocationId, @InitialCash, @TotalSales, @Withdrawals, @Expenses, @DrawerCash, @TimeStart, @TimeEnd, @Status)";
+
+                            using (var insertCommand = new SQLiteCommand(insertQuery, connection))
+                            {
+                                insertCommand.Parameters.AddWithValue("@DrawerId", cashDrawer.DrawerId);
+                                insertCommand.Parameters.AddWithValue("@UserId", cashDrawer.UserId);
+                                insertCommand.Parameters.AddWithValue("@LocationId", cashDrawer.LocationId);
+                                insertCommand.Parameters.AddWithValue("@InitialCash", cashDrawer.InitialCash);
+                                insertCommand.Parameters.AddWithValue("@TotalSales", cashDrawer.TotalSales);
+                                insertCommand.Parameters.AddWithValue("@Withdrawals", cashDrawer.Withdrawals);
+                                insertCommand.Parameters.AddWithValue("@Expenses", cashDrawer.Expense);
+                                insertCommand.Parameters.AddWithValue("@DrawerCash", cashDrawer.DrawerCash);
+                                insertCommand.Parameters.AddWithValue("@TimeStart", cashDrawer.TimeStart);
+                                insertCommand.Parameters.AddWithValue("@TimeEnd", (object)cashDrawer.TimeEnd ?? DBNull.Value);
+                                insertCommand.Parameters.AddWithValue("@Status", cashDrawer.Status);
+
+                                insertCommand.ExecuteNonQuery();
+                            }
+                        }
+                    }
+
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error upserting cash drawer: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public async Task<bool> HasOngoingCashDrawer(int userId, int locationId, string token)
+        {
+            try
+            {
+                string apiUrl = $"https://localhost:7148/api/cashdrawer/ongoing/{userId}/{locationId}"; // Replace with actual API URL
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true; // Ongoing cash drawer exists
+                    }
+
+                    return false; // No ongoing cash drawer found
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error checking ongoing cash drawer: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public static bool HasOngoingCashDrawerLocal(int userId, int locationId)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = @"
+                    SELECT COUNT(*) FROM CashDrawer
+                    WHERE UserId = @UserId 
+                    AND LocationId = @LocationId 
+                    AND TimeEnd IS NULL";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@UserId", userId);
+                        command.Parameters.AddWithValue("@LocationId", locationId);
+
+                        int count = Convert.ToInt32(command.ExecuteScalar());
+
+                        return count > 0; // Returns true if an ongoing cash drawer exists
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error checking cash drawer: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        public static DataTable GetOngoingCashDrawer()
+        {
+            DataTable dt = new DataTable();
+
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = "SELECT * FROM CashDrawer WHERE TimeEnd IS NULL LIMIT 1"; // Fetch only the ongoing cash drawer
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    using (var adapter = new SQLiteDataAdapter(command))
+                    {
+                        adapter.Fill(dt);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error retrieving ongoing cash drawer: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return dt;
+        }
+
+        public static async Task EndCashDrawerAsync(int drawerId, string token)
+        {
+            try
+            {
+                string apiUrl = "https://localhost:7148/api/cashdrawer/end"; // Replace with your actual API URL
+
+                // Prepare request data with DrawerId to be sent in the body of the POST request
+                var requestData = new
+                {
+                    DrawerId = drawerId
+                };
+
+                using (HttpClient client = new HttpClient())
+                {
+                    // Set authorization header with Bearer token
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var jsonContent = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    // Send POST request to the API
+                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show("Cash drawer ended successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        // If the request was successful, update the TimeEnd in local database
+                        UpdateTimeEndInLocalDatabase(drawerId);
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void UpdateTimeEndInLocalDatabase(int drawerId)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = "UPDATE CashDrawer SET TimeEnd = @TimeEnd WHERE DrawerId = @DrawerId AND TimeEnd IS NULL";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@TimeEnd", DateTime.Now);
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating TimeEnd in local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public static async Task AddWithdrawalAsync(int drawerId, decimal amount, string remarks, string description, string token)
+        {
+            try
+            {
+                string apiUrl = "https://localhost:7148/api/cashdrawer/withdrawal/add"; // Replace with your actual API URL
+
+                // Prepare request data to send in the POST body
+                var requestData = new
+                {
+                    DrawerId = drawerId,
+                    Amount = amount,
+                    Remarks = remarks,
+                    Description = description
+                };
+
+                using (HttpClient client = new HttpClient())
+                {
+                    // Set authorization header with Bearer token
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var jsonContent = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    // Send POST request to the API
+                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show("Withdrawal added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        // If the request was successful, insert into local database
+                        InsertWithdrawalIntoLocalDatabase(drawerId,description, amount, remarks);
+                        UpdateCashDrawerWithdrawalsLocal(drawerId, amount);
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void InsertWithdrawalIntoLocalDatabase(int drawerId, string description, decimal amount, string remarks)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        INSERT INTO Withdrawals (DrawerId, Description, Amount, Remarks, DateCreated)
+                        VALUES (@DrawerId, @Description, @Amount, @Remarks, @DateCreated)";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+                        command.Parameters.AddWithValue("@Description", description);
+                        command.Parameters.AddWithValue("@Amount", amount);
+                        command.Parameters.AddWithValue("@Remarks", remarks);
+                        command.Parameters.AddWithValue("@DateCreated", DateTime.Now);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error inserting withdrawal into local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void UpdateCashDrawerWithdrawalsLocal(int drawerId, decimal amount)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    // Update the local CashDrawer's DrawerCash and Withdrawals
+                    string query = @"
+                        UPDATE CashDrawer 
+                        SET Withdrawals = Withdrawals + @Amount, 
+                            DrawerCash = DrawerCash - @Amount
+                        WHERE DrawerId = @DrawerId AND TimeEnd IS NULL";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Amount", amount);
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating cash drawer in local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public static async Task AddExpenseAsync(int drawerId, decimal amount, string remarks, string description, string token)
+        {
+            try
+            {
+                string apiUrl = "https://localhost:7148/api/cashdrawer/expense/add"; // Replace with your actual API URL
+
+                var requestData = new
+                {
+                    DrawerId = drawerId,
+                    Amount = amount,
+                    Remarks = remarks,
+                    Description = description
+                };
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var jsonContent = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Expense added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        InsertExpenseIntoLocalDatabase(drawerId, amount, remarks, description);
+                        UpdateCashDrawerExpensesLocal(drawerId, amount);
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void InsertExpenseIntoLocalDatabase(int drawerId, decimal amount, string remarks, string description)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = @"
+                INSERT INTO Expenses (DrawerId, Amount, Remarks, Description, DateCreated)
+                VALUES (@DrawerId, @Amount, @Remarks, @Description, @DateCreated)";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+                        command.Parameters.AddWithValue("@Amount", amount);
+                        command.Parameters.AddWithValue("@Remarks", remarks);
+                        command.Parameters.AddWithValue("@Description", description);
+                        command.Parameters.AddWithValue("@DateCreated", DateTime.Now);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error inserting expense into local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void UpdateCashDrawerExpensesLocal(int drawerId, decimal amount)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = @"
+                UPDATE CashDrawer 
+                SET Expenses = Expenses + @Amount, 
+                    DrawerCash = DrawerCash - @Amount
+                WHERE DrawerId = @DrawerId AND TimeEnd IS NULL";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Amount", amount);
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating cash drawer in local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public static async Task AddInitialCashAsync(int drawerId, decimal amount, string remarks, string description, string token)
+        {
+            try
+            {
+                string apiUrl = "https://localhost:7148/api/cashdrawer/initialcash/add"; // Replace with your actual API URL
+
+                var requestData = new
+                {
+                    DrawerId = drawerId,
+                    Amount = amount,
+                    Remarks = remarks,
+                    Description = description
+                };
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    var jsonContent = JsonSerializer.Serialize(requestData);
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                    HttpResponseMessage response = await client.PostAsync(apiUrl, content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show("Initial cash added successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        InsertInitialCashIntoLocalDatabase(drawerId, amount, remarks, description);
+                        UpdateCashDrawerInitialCashLocal(drawerId, amount);
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void InsertInitialCashIntoLocalDatabase(int drawerId, decimal amount, string remarks, string description)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = @"
+                INSERT INTO InitialCash (DrawerId, Amount, Remarks, Description, DateCreated)
+                VALUES (@DrawerId, @Amount, @Remarks, @Description, @DateCreated)";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+                        command.Parameters.AddWithValue("@Amount", amount);
+                        command.Parameters.AddWithValue("@Remarks", remarks);
+                        command.Parameters.AddWithValue("@Description", description);
+                        command.Parameters.AddWithValue("@DateCreated", DateTime.Now);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error inserting initial cash into local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void UpdateCashDrawerInitialCashLocal(int drawerId, decimal amount)
+        {
+            try
+            {
+                using (var connection = new SQLiteConnection($"Data Source={DbPath};Version=3;"))
+                {
+                    connection.Open();
+
+                    string query = @"
+                UPDATE CashDrawer 
+                SET InitialCash = InitialCash + @Amount, 
+                    DrawerCash = DrawerCash + @Amount
+                WHERE DrawerId = @DrawerId AND TimeEnd IS NULL";
+
+                    using (var command = new SQLiteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Amount", amount);
+                        command.Parameters.AddWithValue("@DrawerId", drawerId);
+
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error updating cash drawer in local database: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        public static async Task<List<Customers>> GetAllCustomersAsync(string token)
+        {
+            try
+            {
+                string apiUrl = "https://localhost:7148/api/customers"; // Replace with your actual API URL
+
+                using (HttpClient client = new HttpClient())
+                {
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                    HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        return JsonSerializer.Deserialize<List<Customers>>(responseBody, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new List<Customers>();
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        MessageBox.Show($"Error: {response.ReasonPhrase}\nDetails: {error}", "API Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return new List<Customers>();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"API Request Failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return new List<Customers>();
+            }
+        }
+
+        // Function to check if the internet is available
+        private bool IsInternetAvailable()
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(5);
+                    var result = client.GetAsync("https://www.google.com").Result; // Simple ping to Google
+                    return result.IsSuccessStatusCode; // If the status code is successful, return true
+                }
+            }
+            catch
+            {
+                return false; // If there's an error, return false (no internet)
+            }
+        }
+
+        public async Task<bool> CheckCashDrawerStatus(int userId, int locationId)
+        {
+            // Check if the internet is available
+            if (!IsInternetAvailable())
+            {
+                MessageBox.Show("No internet connection available. Please check your network.", "Internet Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false; // Return false if there is no internet
+            }
+
+            DataTable data = new DataTable();
+            data = DatabaseHelper.GetEmployeeByUserIdAndLocationId(userId, locationId);
+            if (data.Rows.Count > 0)
+            {
+                // Call the remote API method to check for an ongoing cash drawer
+                bool isOngoingCashDrawerOnline = await HasOngoingCashDrawer(userId, locationId, data.Rows[0]["Token"].ToString());
+                if (isOngoingCashDrawerOnline)
+                {
+                    return true; // If an ongoing cash drawer exists remotely, return true
+                }
+            }
+
+            // If no ongoing cash drawer found online, check locally
+            bool isOngoingCashDrawerLocal = HasOngoingCashDrawerLocal(userId, locationId);
+            return isOngoingCashDrawerLocal; // Return true if ongoing cash drawer exists locally
+
+
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using POS.Classes;
+﻿using Guna.UI2.WinForms.Suite;
+using Newtonsoft.Json.Linq;
+using POS.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,11 +15,17 @@ namespace POS
 {
     public partial class Withdrawals : MetroFramework.Forms.MetroForm
     {
-        private List<WithdrawalsList> withdrawalsLists;
-        public Withdrawals(List<WithdrawalsList> withdrawalsLists)
+        public int UserId { get; private set; }
+        public int LocationId { get; private set; }
+        public string Token { get; private set; }
+        public int DrawerId { get; private set; }
+        public Withdrawals(int userId, int locationId, string token, int drawerId)
         {
             InitializeComponent();
-            this.withdrawalsLists = withdrawalsLists;
+            UserId = userId;
+            LocationId = locationId;
+            Token = token;
+            DrawerId = drawerId;
         }
 
         private void Withdrawals_KeyDown(object sender, KeyEventArgs e)
@@ -28,9 +36,9 @@ namespace POS
             }
         }
 
-        private void btnRemoveAll_Click(object sender, EventArgs e)
+        private async void btnRemoveAll_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtDescription.Text) || string.IsNullOrWhiteSpace(txtAmount.Text))
+            if (string.IsNullOrWhiteSpace(txtDescription.Text) || string.IsNullOrWhiteSpace(txtAmount.Text) || string.IsNullOrWhiteSpace(txtRemarks.Text))
             {
                 MessageBox.Show("Please fill in all required fields.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -42,14 +50,8 @@ namespace POS
                 return;
             }
 
-            var newWithdrawals = new WithdrawalsList()
-            {
-                Description = txtDescription.Text,
-                Amount = amount,
-                Remarks = txtRemarks.Text
-            };
-
-            withdrawalsLists.Add(newWithdrawals);
+            await DatabaseHelper.AddWithdrawalAsync(DrawerId, amount, txtRemarks.Text, txtDescription.Text, Token);
+            this.DialogResult = DialogResult.OK;
             this.Close();
         }
     }

@@ -35,6 +35,7 @@
             button3 = new Button();
             guna2HtmlLabel10 = new Guna.UI2.WinForms.Guna2HtmlLabel();
             lblAmountDue = new Guna.UI2.WinForms.Guna2HtmlLabel();
+            btnCredit = new Button();
             SuspendLayout();
             // 
             // guna2HtmlLabel1
@@ -42,7 +43,7 @@
             guna2HtmlLabel1.BackColor = Color.Transparent;
             guna2HtmlLabel1.Font = new Font("Segoe UI Semibold", 8.25F, FontStyle.Bold, GraphicsUnit.Point);
             guna2HtmlLabel1.ForeColor = Color.LightCoral;
-            guna2HtmlLabel1.Location = new Point(391, 24);
+            guna2HtmlLabel1.Location = new Point(515, 19);
             guna2HtmlLabel1.Name = "guna2HtmlLabel1";
             guna2HtmlLabel1.Size = new Size(102, 15);
             guna2HtmlLabel1.TabIndex = 27;
@@ -57,13 +58,14 @@
             btnSave.FlatStyle = FlatStyle.Flat;
             btnSave.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
             btnSave.ForeColor = Color.Black;
-            btnSave.Location = new Point(136, 105);
+            btnSave.Location = new Point(263, 99);
             btnSave.Name = "btnSave";
             btnSave.Size = new Size(115, 51);
             btnSave.TabIndex = 33;
             btnSave.Text = "Bank Transfer";
             btnSave.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnSave.UseVisualStyleBackColor = false;
+            btnSave.Click += btnSave_Click;
             // 
             // button1
             // 
@@ -74,7 +76,7 @@
             button1.FlatStyle = FlatStyle.Flat;
             button1.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
             button1.ForeColor = Color.Black;
-            button1.Location = new Point(378, 105);
+            button1.Location = new Point(21, 99);
             button1.Name = "button1";
             button1.Size = new Size(115, 51);
             button1.TabIndex = 34;
@@ -92,7 +94,7 @@
             button2.FlatStyle = FlatStyle.Flat;
             button2.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
             button2.ForeColor = Color.Black;
-            button2.Location = new Point(257, 105);
+            button2.Location = new Point(142, 99);
             button2.Name = "button2";
             button2.Size = new Size(115, 51);
             button2.TabIndex = 35;
@@ -110,7 +112,7 @@
             button3.FlatStyle = FlatStyle.Flat;
             button3.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
             button3.ForeColor = Color.Black;
-            button3.Location = new Point(15, 105);
+            button3.Location = new Point(505, 99);
             button3.Name = "button3";
             button3.Size = new Size(115, 51);
             button3.TabIndex = 36;
@@ -123,7 +125,7 @@
             guna2HtmlLabel10.BackColor = Color.Transparent;
             guna2HtmlLabel10.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
             guna2HtmlLabel10.ForeColor = Color.Black;
-            guna2HtmlLabel10.Location = new Point(20, 63);
+            guna2HtmlLabel10.Location = new Point(29, 51);
             guna2HtmlLabel10.Name = "guna2HtmlLabel10";
             guna2HtmlLabel10.Size = new Size(107, 23);
             guna2HtmlLabel10.TabIndex = 40;
@@ -134,19 +136,38 @@
             lblAmountDue.BackColor = Color.Transparent;
             lblAmountDue.Font = new Font("Segoe UI Semibold", 12F, FontStyle.Bold, GraphicsUnit.Point);
             lblAmountDue.ForeColor = Color.Black;
-            lblAmountDue.Location = new Point(456, 63);
+            lblAmountDue.Location = new Point(142, 51);
             lblAmountDue.Name = "lblAmountDue";
             lblAmountDue.Size = new Size(34, 23);
             lblAmountDue.TabIndex = 39;
             lblAmountDue.Text = "0.00";
+            // 
+            // btnCredit
+            // 
+            btnCredit.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnCredit.BackColor = Color.FromArgb(255, 214, 90);
+            btnCredit.Cursor = Cursors.Hand;
+            btnCredit.FlatAppearance.BorderSize = 0;
+            btnCredit.FlatStyle = FlatStyle.Flat;
+            btnCredit.Font = new Font("Segoe UI Semilight", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            btnCredit.ForeColor = Color.Black;
+            btnCredit.Location = new Point(384, 99);
+            btnCredit.Name = "btnCredit";
+            btnCredit.Size = new Size(115, 51);
+            btnCredit.TabIndex = 41;
+            btnCredit.Text = "Credit Payment";
+            btnCredit.TextImageRelation = TextImageRelation.ImageBeforeText;
+            btnCredit.UseVisualStyleBackColor = false;
+            btnCredit.Click += btnCredit_Click;
             // 
             // Tenders
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BorderStyle = MetroFramework.Drawing.MetroBorderStyle.FixedSingle;
-            ClientSize = new Size(515, 173);
+            ClientSize = new Size(640, 173);
             ControlBox = false;
+            Controls.Add(btnCredit);
             Controls.Add(guna2HtmlLabel10);
             Controls.Add(lblAmountDue);
             Controls.Add(button3);
@@ -176,5 +197,6 @@
         private Button button3;
         private Guna.UI2.WinForms.Guna2HtmlLabel guna2HtmlLabel10;
         private Guna.UI2.WinForms.Guna2HtmlLabel lblAmountDue;
+        private Button btnCredit;
     }
 }

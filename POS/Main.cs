@@ -1,5 +1,6 @@
 using Newtonsoft.Json.Linq;
 using POS.Classes;
+using System.ComponentModel;
 using System.Data;
 
 namespace POS
@@ -12,6 +13,7 @@ namespace POS
         private List<Inventory> inventoryList = new List<Inventory>();
         public int UserId { get; private set; }
         public int LocationId { get; private set; }
+        public int CustomerId { get; private set; }
         private static bool isRetail = true;
         public Main(int userId,int locationId)
         {
@@ -419,10 +421,29 @@ namespace POS
             return -1; // Return -1 if the column is not found
         }
 
-        private void btnCustomer_Click(object sender, EventArgs e)
+        private async Task<bool> CheckDrawer()
         {
-            Customer customer = new Customer();
-            customer.ShowDialog();
+            DatabaseHelper dbHelper = new DatabaseHelper();
+            return await dbHelper.CheckCashDrawerStatus(UserId, LocationId);
+        }
+
+        private async void btnCustomer_Click(object sender, EventArgs e)
+        {
+            
+            if (await CheckDrawer())
+            {
+                var customer = new Customer(UserId, LocationId);
+                var result = customer.ShowDialog();
+                if (result == DialogResult.OK)
+                {
+                    CustomerId = customer.CustomerId;
+                }
+            }
+            else
+            {
+                MessageBox.Show("Starting cash drawer is required", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
         }
 
         private void btnHoldCustomer_Click(object sender, EventArgs e)
@@ -457,15 +478,32 @@ namespace POS
             }
         }
 
-        private void btnTender_Click(object sender, EventArgs e)
+        private async void btnTender_Click(object sender, EventArgs e)
         {
-            SearchCustomer searchCustomer = new SearchCustomer();
-            searchCustomer.ShowDialog();
+            if (await CheckDrawer())
+            {
+                if (CustomerId == 0) { 
+                    var searchCustomer = new SearchCustomer(UserId, LocationId, cart);
+                    var result = searchCustomer.ShowDialog();
+                    if (result == DialogResult.OK)
+                    {
+                        RefreshForm();
+                    }
+                } else
+                {
+                    var tender = new Tenders(UserId, LocationId, CustomerId, cart);
+                    var result = tender.ShowDialog();
+                    if(result == DialogResult.OK)
+                    {
+                        RefreshForm();
+                    }
+                }
+            }
         }
 
         private void btnCredits_Click(object sender, EventArgs e)
         {
-            MessageBox.Show(UserId.ToString());
+            MessageBox.Show(CustomerId.ToString());
         }
 
         private void txtBarcode_KeyDown(object sender, KeyEventArgs e)
@@ -693,7 +731,7 @@ namespace POS
             DisplayVatAmount();
             DisplayVatExempt();
             DisplayTotalDiscount();
-
+            CustomerId = 0;
             // Reload the inventory list
             inventoryList = DatabaseHelper.LoadInventoryList();
         }

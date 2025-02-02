@@ -169,6 +169,7 @@
             btnSave.Text = "Save";
             btnSave.TextImageRelation = TextImageRelation.ImageBeforeText;
             btnSave.UseVisualStyleBackColor = false;
+            btnSave.Click += btnSave_Click;
             // 
             // NewCustomer
             // 

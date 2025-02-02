@@ -1,4 +1,6 @@
-﻿using POS.Classes;
+﻿using Microsoft.VisualBasic.ApplicationServices;
+using Newtonsoft.Json.Linq;
+using POS.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,11 +15,17 @@ namespace POS
 {
     public partial class InitialCash : MetroFramework.Forms.MetroForm
     {
-        private List<InitialCashList> initialCashList;
-        public InitialCash(List<InitialCashList> initialCash)
+        public int UserId { get; private set; }
+        public int LocationId { get; private set; }
+        public string Token { get; private set; }
+        public int DrawerId { get; private set; }
+        public InitialCash(int userId, int locationId, string token, int drawerId)
         {
             InitializeComponent();
-            initialCashList = initialCash;
+            UserId = userId;
+            LocationId = locationId;
+            Token = token;
+            DrawerId = drawerId;
         }
 
         private void InitialCash_KeyDown(object sender, KeyEventArgs e)
@@ -28,37 +36,22 @@ namespace POS
             }
         }
 
-        private void btnRemoveAll_Click(object sender, EventArgs e)
+        private async void btnRemoveAll_Click(object sender, EventArgs e)
         {
-            // Validate input fields
-            if (string.IsNullOrWhiteSpace(txtDescription.Text) || string.IsNullOrWhiteSpace(txtAmount.Text))
+            if (string.IsNullOrWhiteSpace(txtDescription.Text) || string.IsNullOrWhiteSpace(txtAmount.Text) || string.IsNullOrWhiteSpace(txtRemarks.Text))
             {
                 MessageBox.Show("Please fill in all required fields.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Validate the amount entered is a valid decimal
             if (!decimal.TryParse(txtAmount.Text, out decimal amount))
             {
                 MessageBox.Show("Invalid amount entered.", "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Create an InitialCash object
-            var newInitialCash = new InitialCashList()
-            {
-                Description = txtDescription.Text,
-                Amount = amount,
-                Remarks = txtRemarks.Text
-            };
-
-            // Add the new entry to the list
-            initialCashList.Add(newInitialCash);
-
-            // Optionally, update the UI or notify the user that the entry was added
-            MessageBox.Show("Initial cash entry added.");
-
-            // Close the form after saving
+            await DatabaseHelper.AddInitialCashAsync(DrawerId, amount, txtRemarks.Text, txtDescription.Text, Token);
+            this.DialogResult = DialogResult.OK;
             this.Close();
         }
     }
